@@ -17,6 +17,7 @@ import java.util.Map;
 
 public class SellerDaoJDBC implements SellerDao {
 
+    // vem da DaoFactory, fica aberta até alguém chamar closeConnection
     private Connection conn;
 
     public SellerDaoJDBC(Connection conn){
@@ -28,25 +29,26 @@ public class SellerDaoJDBC implements SellerDao {
         PreparedStatement st = null;
 
         try {
+            // RETURN_GENERATED_KEYS pra pegar o Id depois
             st = conn.prepareStatement(
                     "INSERT INTO seller" +
-                    "(Name, Email, BirthDate, BaseSalary, DepartmentId)" +
-                    "VALUES\n" +
-                    "(?, ?, ?, ?, ?)",
+                            "(Name, Email, BirthDate, BaseSalary, DepartmentId)" +
+                            "VALUES\n" +
+                            "(?, ?, ?, ?, ?)",
                     PreparedStatement.RETURN_GENERATED_KEYS);
 
             st.setString(1, obj.getName());
             st.setString(2, obj.getEmail());
-            st.setDate(3, java.sql.Date.valueOf(obj.getBirthDate()));
+            st.setDate(3, java.sql.Date.valueOf(obj.getBirthDate())); // LocalDate -> sql.Date
             st.setDouble(4, obj.getBaseSalary());
-            st.setInt(5, obj.getDepartment().getId());
+            st.setInt(5, obj.getDepartment().getId()); // Id do department, não do seller
 
             int rowsAffected = st.executeUpdate();
 
             if (rowsAffected > 0){
                 ResultSet rs = st.getGeneratedKeys();
                 if (rs.next()){
-                    int id = rs.getInt(1);
+                    int id = rs.getInt(1); // só 1 coluna, sem nome
                     obj.setId(id);
                 }
                 DB.closeResultSet(rs);
@@ -58,7 +60,7 @@ public class SellerDaoJDBC implements SellerDao {
         } catch (SQLException e) {
             throw new DbException(e.getMessage());
         } finally {
-            DB.closeStatement(st);
+            DB.closeStatement(st); // conn fica aberta, não fecha aqui
         }
     }
 
@@ -67,6 +69,7 @@ public class SellerDaoJDBC implements SellerDao {
         PreparedStatement st = null;
 
         try {
+            // Id no WHERE diz qual linha, o resto é o valor novo
             st = conn.prepareStatement(
                     "UPDATE seller " +
                             "SET Name = ?, Email = ?, BirthDate = ?, BaseSalary = ?, DepartmentId = ? " +
@@ -77,9 +80,9 @@ public class SellerDaoJDBC implements SellerDao {
             st.setDate(3, java.sql.Date.valueOf(obj.getBirthDate()));
             st.setDouble(4, obj.getBaseSalary());
             st.setInt(5, obj.getDepartment().getId());
-            st.setInt(6, obj.getId());
+            st.setInt(6, obj.getId()); // esse é o seller que vai ser alterado
 
-            st.executeUpdate();
+            st.executeUpdate(); // não precisei guardar o retorno aqui
 
         } catch (SQLException e) {
             throw new DbException(e.getMessage());
@@ -90,7 +93,7 @@ public class SellerDaoJDBC implements SellerDao {
 
     @Override
     public void deleteById(Integer id) {
-
+        // fazer depois
     }
 
     @Override
@@ -99,6 +102,7 @@ public class SellerDaoJDBC implements SellerDao {
         ResultSet rs = null;
 
         try {
+            // DepName pq seller e department tem coluna Name os 2
             st = conn.prepareStatement(
                     "SELECT seller.*,department.Name as DepName\n" +
                             "FROM seller INNER JOIN department\n" +
@@ -109,12 +113,12 @@ public class SellerDaoJDBC implements SellerDao {
             st.setInt(1, id);
             rs = st.executeQuery();
 
-            if (rs.next()){
+            if (rs.next()){ // Id é PK, só vem 1 linha mesmo
                 Department dep = instantiateDepartment(rs);
                 Seller obj = instantiateSeller(rs, dep);
                 return obj;
             }
-            return null;
+            return null; // não achou, e tá tudo bem
 
         } catch (SQLException e) {
             throw new DbException(e.getMessage());
@@ -125,6 +129,7 @@ public class SellerDaoJDBC implements SellerDao {
 
     }
 
+    // monta o Seller da linha atual do rs. quem trata exception é o método público
     private Seller instantiateSeller(ResultSet rs, Department dep) throws SQLException {
         Seller obj = new Seller();
         obj.setId(rs.getInt("Id"));
@@ -138,7 +143,7 @@ public class SellerDaoJDBC implements SellerDao {
 
     private Department instantiateDepartment(ResultSet rs) throws SQLException {
         Department dep = new Department();
-        dep.setId(rs.getInt("DepartmentId"));
+        dep.setId(rs.getInt("DepartmentId")); // vem do seller mesmo, bate com department.Id pelo join
         dep.setName(rs.getString("DepName"));
         return dep;
     }
@@ -149,6 +154,7 @@ public class SellerDaoJDBC implements SellerDao {
         ResultSet rs = null;
 
         try {
+            // sem WHERE, pega todo mundo de qualquer department
             st = conn.prepareStatement(
                     "SELECT seller.*,department.Name as DepName " +
                             "FROM seller INNER JOIN department " +
@@ -159,7 +165,7 @@ public class SellerDaoJDBC implements SellerDao {
             rs = st.executeQuery();
 
             List<Seller> list = new ArrayList<>();
-            Map<Integer, Department> map = new HashMap<>();
+            Map<Integer, Department> map = new HashMap<>(); // aqui o map é obrigatório, mistura department diferente
 
             while (rs.next()){
 
@@ -171,7 +177,7 @@ public class SellerDaoJDBC implements SellerDao {
                 Seller obj = instantiateSeller(rs, dep);
                 list.add(obj);
             }
-            return list;
+            return list; // vazia se não tiver nada, nunca null
 
         } catch (SQLException e) {
             throw new DbException(e.getMessage());
@@ -199,7 +205,7 @@ public class SellerDaoJDBC implements SellerDao {
             rs = st.executeQuery();
 
             List<Seller> list = new ArrayList<>();
-            Map<Integer, Department> map = new HashMap<>();
+            Map<Integer, Department> map = new HashMap<>(); // não precisava aqui (só 1 dep), mas deixei igual o findAll
 
             while (rs.next()){
 
