@@ -93,7 +93,22 @@ public class SellerDaoJDBC implements SellerDao {
 
     @Override
     public void deleteById(Integer id) {
-        // fazer depois
+        PreparedStatement st = null;
+        try {
+            st = conn.prepareStatement(
+                    "DELETE FROM seller WHERE Id = ?"
+            );
+            st.setInt(1, id);
+
+            int rows = st.executeUpdate();
+            if (rows == 0){
+                throw new DbException("Seller Id doesn't exist!"); // rodou, mas não tinha ninguém com esse Id
+            }
+        } catch (SQLException e) {
+            throw new DbException(e.getMessage()); // aqui cairia se fosse erro de FK, mas seller não tem ninguém dependendo dele
+        } finally {
+            DB.closeStatement(st);
+        }
     }
 
     @Override
