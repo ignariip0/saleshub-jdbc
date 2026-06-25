@@ -19,15 +19,45 @@ public class DepartmentDaoJDBC implements DepartmentDao {
 
     Connection conn;
 
-    public DepartmentDaoJDBC(Connection conn){
+    public DepartmentDaoJDBC(Connection conn) {
         this.conn = conn;
     }
 
 
     @Override
     public void insert(Department obj) {
+        PreparedStatement st = null;
 
+        try {
+            // RETURN_GENERATED_KEYS pra pegar o Id depois
+            st = conn.prepareStatement(
+                    "INSERT INTO department" +
+                            "(Name)" +
+                            "VALUES" +
+                            "(?)",
+                    PreparedStatement.RETURN_GENERATED_KEYS);
+
+            st.setString(1, obj.getName());
+
+            int rowsAffected = st.executeUpdate();
+            if (rowsAffected > 0) {
+                ResultSet rs = st.getGeneratedKeys();
+                if (rs.next()) {
+                    int id = rs.getInt(1); // só 1 coluna, sem nome
+                    obj.setId(id);
+                }
+                DB.closeResultSet(rs);
+            } else {
+                throw new DbException("Unexpected error! No rows affected!");
+            }
+
+        } catch (SQLException e) {
+            throw new DbException(e.getMessage());
+        } finally {
+            DB.closeStatement(st); // conn fica aberta, não fecha aqui
+        }
     }
+
 
     @Override
     public void update(Department obj) {
