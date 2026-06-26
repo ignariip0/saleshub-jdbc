@@ -133,7 +133,7 @@ public class SellerDaoJDBC implements SellerDao {
                 Seller obj = instantiateSeller(rs, dep);
                 return obj;
             }
-            return null; // não achou, e tá tudo bem
+            return null; // não achou
 
         } catch (SQLException e) {
             throw new DbException(e.getMessage());
