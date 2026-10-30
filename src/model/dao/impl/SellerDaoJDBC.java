@@ -27,6 +27,7 @@ public class SellerDaoJDBC implements SellerDao {
     @Override
     public void insert(Seller obj) {
         PreparedStatement st = null;
+        ResultSet rs = null;
 
         try {
             // RETURN_GENERATED_KEYS pra pegar o Id depois
@@ -46,21 +47,21 @@ public class SellerDaoJDBC implements SellerDao {
             int rowsAffected = st.executeUpdate();
 
             if (rowsAffected > 0){
-                ResultSet rs = st.getGeneratedKeys();
+                rs = st.getGeneratedKeys();
                 if (rs.next()){
                     int id = rs.getInt(1); // só 1 coluna, sem nome
                     obj.setId(id);
                 }
-                DB.closeResultSet(rs);
             } else {
                 throw new DbException("Unexpected error! No rows affected!");
             }
 
 
         } catch (SQLException e) {
-            throw new DbException(e.getMessage());
+            throw new DbException(e.getMessage(), e);
         } finally {
             DB.closeStatement(st); // conn fica aberta, não fecha aqui
+            DB.closeResultSet(rs);
         }
     }
 
@@ -85,7 +86,7 @@ public class SellerDaoJDBC implements SellerDao {
             st.executeUpdate(); // não precisei guardar o retorno aqui
 
         } catch (SQLException e) {
-            throw new DbException(e.getMessage());
+            throw new DbException(e.getMessage(), e);
         } finally {
             DB.closeStatement(st);
         }
@@ -105,7 +106,7 @@ public class SellerDaoJDBC implements SellerDao {
                 throw new DbException("Seller Id doesn't exist!"); // rodou, mas não tinha ninguém com esse Id
             }
         } catch (SQLException e) {
-            throw new DbException(e.getMessage()); // aqui cairia se fosse erro de FK, mas seller não tem ninguém dependendo dele
+            throw new DbException(e.getMessage(), e); // aqui cairia se fosse erro de FK, mas seller não tem ninguém dependendo dele
         } finally {
             DB.closeStatement(st);
         }
@@ -136,7 +137,7 @@ public class SellerDaoJDBC implements SellerDao {
             return null; // não achou
 
         } catch (SQLException e) {
-            throw new DbException(e.getMessage());
+            throw new DbException(e.getMessage(), e);
         } finally {
             DB.closeStatement(st);
             DB.closeResultSet(rs);
@@ -195,7 +196,7 @@ public class SellerDaoJDBC implements SellerDao {
             return list; // vazia se não tiver nada, nunca null
 
         } catch (SQLException e) {
-            throw new DbException(e.getMessage());
+            throw new DbException(e.getMessage(), e);
         } finally {
             DB.closeStatement(st);
             DB.closeResultSet(rs);
@@ -235,7 +236,7 @@ public class SellerDaoJDBC implements SellerDao {
             return list;
 
         } catch (SQLException e) {
-            throw new DbException(e.getMessage());
+            throw new DbException(e.getMessage(), e);
         } finally {
             DB.closeStatement(st);
             DB.closeResultSet(rs);

@@ -28,6 +28,7 @@ public class DepartmentDaoJDBC implements DepartmentDao {
     @Override
     public void insert(Department obj) {
         PreparedStatement st = null;
+        ResultSet rs = null;
 
         try {
             // RETURN_GENERATED_KEYS pra pegar o Id depois
@@ -42,20 +43,20 @@ public class DepartmentDaoJDBC implements DepartmentDao {
 
             int rowsAffected = st.executeUpdate();
             if (rowsAffected > 0) {
-                ResultSet rs = st.getGeneratedKeys();
+                rs = st.getGeneratedKeys();
                 if (rs.next()) {
                     int id = rs.getInt(1); // só 1 coluna, sem nome
                     obj.setId(id);
                 }
-                DB.closeResultSet(rs);
             } else {
                 throw new DbException("Unexpected error! No rows affected!");
             }
 
         } catch (SQLException e) {
-            throw new DbException(e.getMessage());
+            throw new DbException(e.getMessage(), e);
         } finally {
             DB.closeStatement(st); // conn fica aberta, não fecha aqui
+            DB.closeResultSet(rs);
         }
     }
 
@@ -77,7 +78,7 @@ public class DepartmentDaoJDBC implements DepartmentDao {
             st.executeUpdate(); // não precisei guardar o retorno aqui
 
         } catch (SQLException e) {
-            throw new DbException(e.getMessage());
+            throw new DbException(e.getMessage(), e);
         } finally {
             DB.closeStatement(st);
         }
@@ -98,9 +99,9 @@ public class DepartmentDaoJDBC implements DepartmentDao {
             }
         } catch (SQLException e) {
             if (e.getErrorCode() == 1451) {
-                throw new DbIntegrityException(e.getMessage());
+                throw new DbIntegrityException(e.getMessage(), e);
             } else {
-                throw new DbException(e.getMessage());
+                throw new DbException(e.getMessage(), e);
             }
         } finally {
             DB.closeStatement(st);
@@ -129,7 +130,7 @@ public class DepartmentDaoJDBC implements DepartmentDao {
             return null; // não achou
 
         } catch (SQLException e) {
-            throw new DbException(e.getMessage());
+            throw new DbException(e.getMessage(), e);
         } finally {
             DB.closeStatement(st);
             DB.closeResultSet(rs);
@@ -157,7 +158,7 @@ public class DepartmentDaoJDBC implements DepartmentDao {
             return list; // vazia se não tiver nada, nunca null
 
         } catch (SQLException e) {
-            throw new DbException(e.getMessage());
+            throw new DbException(e.getMessage(), e);
         } finally {
             DB.closeStatement(st);
             DB.closeResultSet(rs);
